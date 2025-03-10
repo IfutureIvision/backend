@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insight Web Interface</title>
+    <link rel="stylesheet" 
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        /* Prevent interaction and scrolling inside iframe */
+        .web-container {
+            pointer-events: none;  /* Disable user interaction */
+            user-select: none;      /* Prevent selection */
+            border: 2px solid #007bff;
+            width: 100%;
+            height: 500px;
+            overflow: hidden;       /* Prevent scrolling */
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            overflow: hidden;
+        }
+
+        .status-box {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+        }
+
+        .status-online {
+            color: green;
+            font-weight: bold;
+        }
+
+        .status-offline {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Status Header -->
+        <div class="row">
+            <div class="col-12">
+                <h3 class="text-center">Camera Connection Status</h3>
+            </div>
+        </div>
+
+        <!-- Camera Information Section -->
+        <div class="row">
+            <div class="col-md-6 status-box">
+                <h5>Camera 1 (CAM_1)</h5>
+                <p><strong>IP Address:</strong> <span id="camera1-ip">{{ cameras['CAM_1'].ip }}</span></p>
+                <p><strong>Port:</strong> <span id="camera1-port">{{ cameras['CAM_1'].port }}</span></p>
+                <p><strong>Status:</strong> <span id="status1" class="status-offline">Checking...</span></p>
+            </div>
+            <div class="col-md-6 status-box">
+                <h5>Camera 2 (CAM_2)</h5>
+                <p><strong>IP Address:</strong> <span id="camera2-ip">{{ cameras['CAM_2'].ip }}</span></p>
+                <p><strong>Port:</strong> <span id="camera2-port">{{ cameras['CAM_2'].port }}</span></p>
+                <p><strong>Status:</strong> <span id="status2" class="status-offline">Checking...</span></p>
+            </div>
+        </div>
+
+        <!-- Camera Feeds Section -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h4>CAM_1 Feed</h4>
+                <iframe id="web-container1" class="web-container" 
+                        src="{{ cameras['CAM_1'].url }}" 
+                        sandbox="allow-scripts allow-same-origin"
+                        scrolling="no">
+                </iframe>
+            </div>
+            <div class="col-md-6">
+                <h4>CAM_2 Feed</h4>
+                <iframe id="web-container2" class="web-container" 
+                        src="{{ cameras['CAM_2'].url }}" 
+                        sandbox="allow-scripts allow-same-origin"
+                        scrolling="no">
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to update camera status dynamically
+        function updateStatus() {
+            fetch("/status")
+                .then(response => response.json())
+                .then(data => {
+                    // Update CAM_1 details
+                    document.getElementById("status1").textContent = data.CAM_1.status;
+                    document.getElementById("camera1-ip").textContent = data.CAM_1.ip;
+                    document.getElementById("camera1-port").textContent = data.CAM_1.port;
+                    
+                    // Change color based on status
+                    if (data.CAM_1.status === "ONLINE") {
+                        document.getElementById("status1").classList.add("status-online");
+                        document.getElementById("status1").classList.remove("status-offline");
+                    } else {
+                        document.getElementById("status1").classList.add("status-offline");
+                        document.getElementById("status1").classList.remove("status-online");
+                    }
+
+                    // Update CAM_2 details
+                    document.getElementById("status2").textContent = data.CAM_2.status;
+                    document.getElementById("camera2-ip").textContent = data.CAM_2.ip;
+                    document.getElementById("camera2-port").textContent = data.CAM_2.port;
+
+                    // Change color based on status
+                    if (data.CAM_2.status === "ONLINE") {
+                        document.getElementById("status2").classList.add("status-online");
+                        document.getElementById("status2").classList.remove("status-offline");
+                    } else {
+                        document.getElementById("status2").classList.add("status-offline");
+                        document.getElementById("status2").classList.remove("status-online");
+                    }
+                });
+        }
+        setInterval(updateStatus, 10000); // Update every 10 seconds
+        updateStatus();
+
+        // Prevent scrolling inside iframes
+        document.querySelectorAll(".web-container").forEach(container => {
+            container.addEventListener("wheel", function(event) {
+                event.preventDefault();
+            }, { passive: false });
+        });
+    </script>
+</body>
+</html>
